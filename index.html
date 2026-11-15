@@ -485,5 +485,90 @@ mediaPreview('videoFile','videoPreview','video');
     }
   });
 })();
+</script><script type="module">
+import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.10';
+import { toBlobURL } from 'https://esm.sh/@ffmpeg/util@0.12.2';
+
+const ffmpeg = new FFmpeg();
+let ffmpegReady = false;
+
+const convertButton = document.createElement('button');
+convertButton.textContent = '🎬 CONVERTI IN MP4';
+convertButton.style.cssText =
+  'display:block;margin:15px auto;background:#16a36a;color:white;padding:14px;border:0;border-radius:10px;font-weight:bold;';
+
+const mp4Download = document.createElement('a');
+mp4Download.textContent = '⬇ SCARICA VIDEO MP4';
+mp4Download.style.cssText =
+  'display:none;display:block;text-align:center;color:#9df5c5;margin:15px;';
+
+const status = document.getElementById('wasVideoStatus');
+const oldDownload = document.getElementById('wasVideoDownload');
+const resultVideo = document.getElementById('wasVideoResult');
+
+oldDownload.insertAdjacentElement('afterend', convertButton);
+convertButton.insertAdjacentElement('afterend', mp4Download);
+mp4Download.style.display = 'none';
+
+convertButton.addEventListener('click', async () => {
+  if (!resultVideo.src) {
+    status.textContent = 'Prima crea un video WEBM.';
+    return;
+  }
+
+  convertButton.disabled = true;
+  mp4Download.style.display = 'none';
+
+  try {
+    status.textContent = 'Caricamento motore MP4...';
+
+    if (!ffmpegReady) {
+      const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+
+      const coreURL = await toBlobURL(
+        base + '/ffmpeg-core.js', 'text/javascript'
+      );
+
+      const wasmURL = await toBlobURL(
+        base + '/ffmpeg-core.wasm', 'application/wasm'
+      );
+
+      await ffmpeg.load({ coreURL, wasmURL });
+      ffmpegReady = true;
+    }
+
+    status.textContent = 'Conversione MP4 in corso...';
+
+    const response = await fetch(resultVideo.src);
+    const videoData = new Uint8Array(await response.arrayBuffer());
+
+    await ffmpeg.writeFile('video.webm', videoData);
+
+    await ffmpeg.exec([
+      '-i', 'video.webm',
+      '-c:v', 'libx264',
+      '-preset', 'ultrafast',
+      '-pix_fmt', 'yuv420p',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-movflags', '+faststart',
+      'video.mp4'
+    ]);
+
+    const output = await ffmpeg.readFile('video.mp4');
+    const mp4Blob = new Blob([output], { type: 'video/mp4' });
+    const mp4URL = URL.createObjectURL(mp4Blob);
+
+    mp4Download.href = mp4URL;
+    mp4Download.download = 'world-ai-studio.mp4';
+    mp4Download.style.display = 'block';
+
+    status.textContent = 'Conversione completata! MP4 pronto.';
+  } catch (error) {
+    status.textContent = 'Conversione non riuscita: ' + error.message;
+  } finally {
+    convertButton.disabled = false;
+  }
+});
 </script></body>
 </html>
