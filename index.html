@@ -349,31 +349,47 @@ mediaPreview('videoFile','videoPreview','video');
     status.textContent = images.length + ' fotografie caricate.';
   });
 
-  function drawImage(img, progress, title) {
-    const w = canvas.width, h = canvas.height;
-    const scale = Math.max(w / img.width, h / img.height);
-    const zoom = 1 + progress * 0.12;
-    const iw = img.width * scale * zoom;
-    const ih = img.height * scale * zoom;
-    const drift = progress * 35;
-    ctx.fillStyle = '#000';
-    ctx.fillRect(0, 0, w, h);
-    ctx.drawImage(img, (w-iw)/2-drift, (h-ih)/2, iw, ih);
+ function drawImage(img, progress, title, previous) {
+  const w = canvas.width;
+  const h = canvas.height;
 
-    const gradient = ctx.createLinearGradient(0, h*0.55, 0, h);
-    gradient.addColorStop(0, 'transparent');
-    gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0,0,w,h);
+  function paint(photo, zoom, alpha) {
+    const scale = Math.max(w / photo.width, h / photo.height);
+    const iw = photo.width * scale * zoom;
+    const ih = photo.height * scale * zoom;
 
-    ctx.fillStyle = 'white';
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 48px Arial';
-    ctx.shadowColor = '#000';
-    ctx.shadowBlur = 8;
-    
-    ctx.shadowBlur = 0;
+    ctx.globalAlpha = alpha;
+    ctx.drawImage(
+      photo,
+      (w - iw) / 2,
+      (h - ih) / 2,
+      iw,
+      ih
+    );
   }
+
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = '#000';
+  ctx.fillRect(0, 0, w, h);
+
+  const fade = Math.min(progress / 0.18, 1);
+  const zoom = 1.08 - progress * 0.08;
+
+  if (previous) {
+    paint(previous, 1.04, 1);
+    paint(img, zoom, fade);
+  } else {
+    paint(img, zoom, 1);
+  }
+
+  ctx.globalAlpha = 1;
+
+  const gradient = ctx.createLinearGradient(0, h * 0.55, 0, h);
+  gradient.addColorStop(0, 'transparent');
+  gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, w, h);
+}
 
   createButton.addEventListener('click', async () => {
     if (!images.length) {
