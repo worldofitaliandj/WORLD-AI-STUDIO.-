@@ -265,5 +265,225 @@ function mediaPreview(inputId,previewId,type){
 mediaPreview('audioFile','audioPreview','audio');
 mediaPreview('videoFile','videoPreview','video');
 </script>
-</body>
+<style>
+#wasVideoButton {
+  position:fixed; right:16px; bottom:18px; z-index:9998;
+  background:#7548e8; color:white; border:0; border-radius:14px;
+  padding:14px 18px; font-weight:bold; cursor:pointer;
+}
+#wasVideoPanel {
+  display:none; position:fixed; inset:0; z-index:9999;
+  background:#11131c; color:white; padding:18px;
+  overflow:auto; font-family:Arial,sans-serif;
+}
+#wasVideoPanel input,#wasVideoPanel select {
+  display:block; width:100%; box-sizing:border-box;
+  margin:9px 0 16px; padding:12px; border-radius:9px;
+}
+#wasVideoPanel button {
+  padding:12px 16px; border:0; border-radius:9px;
+  margin:5px; cursor:pointer; font-weight:bold;
+}
+#wasVideoCanvas {width:100%; max-width:700px; background:#000; display:block; margin:12px auto;}
+#wasVideoStatus {margin:12px 0; color:#bdaaff;}
+</style>
+
+<button id="wasVideoButton" onclick="document.getElementById('wasVideoPanel').style.display='block'">
+  🎬 VIDEO STUDIO
+</button>
+
+<div id="wasVideoPanel">
+  <h2>🎬 WORLD AI STUDIO – VIDEO STUDIO</h2>
+  <p>Crea un video con fotografie, musica e animazioni.</p>
+
+  <label>1. Carica le fotografie</label>
+  <input id="wasImages" type="file" accept="image/*" multiple>
+
+  <label>2. Aggiungi la musica (facoltativo)</label>
+  <input id="wasMusic" type="file" accept="audio/*">
+
+  <label>3. Titolo del video</label>
+  <input id="wasTitle" type="text" value="WORLD AI STUDIO">
+
+  <label>4. Durata del video</label>
+  <select id="wasDuration">
+    <option value="120">2 minuti</option>
+    <option value="180">3 minuti</option>
+  </select>
+
+  <button id="wasCreate" style="background:#7548e8;color:white">
+    CREA VIDEO
+  </button>
+  <button onclick="document.getElementById('wasVideoPanel').style.display='none'">
+    CHIUDI
+  </button>
+
+  <p id="wasVideoStatus">In attesa delle fotografie.</p>
+  <canvas id="wasVideoCanvas" width="1280" height="720"></canvas>
+  <video id="wasVideoResult" controls playsinline style="width:100%;max-width:700px;display:none"></video>
+  <a id="wasVideoDownload" style="display:none;color:#c4adff" download="world-ai-studio.webm">Scarica il video</a>
+</div>
+
+<script>
+(() => {
+  const imagesInput = document.getElementById('wasImages');
+  const musicInput = document.getElementById('wasMusic');
+  const canvas = document.getElementById('wasVideoCanvas');
+  const ctx = canvas.getContext('2d');
+  const status = document.getElementById('wasVideoStatus');
+  const createButton = document.getElementById('wasCreate');
+  const result = document.getElementById('wasVideoResult');
+  const download = document.getElementById('wasVideoDownload');
+
+  let images = [];
+
+  imagesInput.addEventListener('change', async () => {
+    images = [];
+    for (const file of imagesInput.files) {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+      images.push(img);
+    }
+    status.textContent = images.length + ' fotografie caricate.';
+  });
+
+  function drawImage(img, progress, title) {
+    const w = canvas.width, h = canvas.height;
+    const scale = Math.max(w / img.width, h / img.height);
+    const zoom = 1 + progress * 0.12;
+    const iw = img.width * scale * zoom;
+    const ih = img.height * scale * zoom;
+    const drift = progress * 35;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, w, h);
+    ctx.drawImage(img, (w-iw)/2-drift, (h-ih)/2, iw, ih);
+
+    const gradient = ctx.createLinearGradient(0, h*0.55, 0, h);
+    gradient.addColorStop(0, 'transparent');
+    gradient.addColorStop(1, 'rgba(0,0,0,0.8)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0,0,w,h);
+
+    ctx.fillStyle = 'white';
+    ctx.textAlign = 'center';
+    ctx.font = 'bold 48px Arial';
+    ctx.shadowColor = '#000';
+    ctx.shadowBlur = 8;
+    ctx.fillText(title, w/2, h-65, w-100);
+    ctx.shadowBlur = 0;
+  }
+
+  createButton.addEventListener('click', async () => {
+    if (!images.length) {
+      status.textContent = 'Carica almeno una fotografia.';
+      return;
+    }
+
+    if (!window.MediaRecorder || !canvas.captureStream) {
+      status.textContent = 'Il browser non supporta la registrazione video.';
+      return;
+    }
+
+    const mime = ['video/webm;codecs=vp9,opus',
+                  'video/webm;codecs=vp8,opus',
+                  'video/webm'].find(x => MediaRecorder.isTypeSupported(x));
+
+    if (!mime) {
+      status.textContent = 'Registrazione video non supportata.';
+      return;
+    }
+
+    createButton.disabled = true;
+    result.style.display = 'none';
+    download.style.display = 'none';
+
+    const duration = Number(document.getElementById('wasDuration').value);
+    const title = document.getElementById('wasTitle').value || 'WORLD AI STUDIO';
+
+    let audioContext = null;
+    let source = null;
+    let audioDestination = null;
+
+    try {
+      if (musicInput.files[0]) {
+        audioContext = new AudioContext();
+        await audioContext.resume();
+        const buffer = await musicInput.files[0].arrayBuffer();
+        const audioData = await audioContext.decodeAudioData(buffer);
+        source = audioContext.createBufferSource();
+        source.buffer = audioData;
+        source.loop = true;
+        audioDestination = audioContext.createMediaStreamDestination();
+        source.connect(audioDestination);
+        source.connect(audioContext.destination);
+      }
+
+      const stream = canvas.captureStream(30);
+      if (audioDestination) {
+        audioDestination.stream.getAudioTracks().forEach(t => stream.addTrack(t));
+      }
+
+      const recorder = new MediaRecorder(stream, {mimeType: mime});
+      const chunks = [];
+
+      recorder.ondataavailable = e => {
+        if (e.data.size) chunks.push(e.data);
+      };
+
+      recorder.onerror = () => {
+        status.textContent = 'Errore durante la registrazione.';
+        createButton.disabled = false;
+      };
+
+      recorder.onstop = () => {
+        if (source) source.stop();
+        if (audioContext) audioContext.close();
+        stream.getTracks().forEach(t => t.stop());
+
+        const blob = new Blob(chunks, {type:'video/webm'});
+        const url = URL.createObjectURL(blob);
+        result.src = url;
+        result.style.display = 'block';
+        download.href = url;
+        download.style.display = 'block';
+        download.textContent = '⬇ SCARICA IL VIDEO';
+        status.textContent = 'Video completato! Durata: ' + (duration/60) + ' minuti.';
+        createButton.disabled = false;
+      };
+
+      let start = 0;
+      const frame = timestamp => {
+        if (!start) start = timestamp;
+        const elapsed = (timestamp-start)/1000;
+        const progress = Math.min(elapsed/duration, 1);
+        const index = Math.min(images.length-1,
+          Math.floor(elapsed / (duration/images.length)));
+        const local = (elapsed % (duration/images.length)) /
+          (duration/images.length);
+
+        drawImage(images[index], local, title);
+        status.textContent = 'Creazione video: ' +
+          Math.floor(progress*100) + '%';
+
+        if (elapsed >= duration) {
+          recorder.stop();
+          return;
+        }
+        requestAnimationFrame(frame);
+      };
+
+      recorder.start(1000);
+      if (source) source.start();
+      requestAnimationFrame(frame);
+
+    } catch (error) {
+      if (audioContext) audioContext.close();
+      status.textContent = 'Errore: ' + error.message;
+      createButton.disabled = false;
+    }
+  });
+})();
+</script></body>
 </html>
