@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10182b">
+<title>WORLD AI STUDIO</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0b1020;color:#f5f7ff;font-family:Arial,sans-serif}
+header{padding:20px;background:#111b31;border-bottom:1px solid #34415f}
+.logo{font-size:24px;font-weight:bold;letter-spacing:2px}
+.logo span{color:#8ca8ff}
+header p{color:#9baac8;margin:5px 0 0;font-size:12px}
+main{max-width:1100px;margin:auto;padding:20px}
+.hero{padding:25px 5px}
+h1{font-size:38px;margin:0 0 10px}
+h1 span{color:#8ca8ff}
+.muted{color:#aab5cc;line-height:1.6}
+nav{display:flex;gap:8px;overflow:auto;margin:20px 0}
+button{background:#202d49;color:white;border:1px solid #394969;padding:12px 15px;border-radius:9px;cursor:pointer}
+button.active,.primary{background:#526fe0;border-color:#526fe0}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:15px}
+.card{background:#151f35;border:1px solid #2b3a59;border-radius:15px;padding:18px}
+.card h2{margin-top:0;font-size:19px}
+input,textarea,select{width:100%;padding:12px;margin:8px 0 15px;background:#0b1427;color:white;border:1px solid #354565;border-radius:8px}
+textarea{min-height:120px}
+label{color:#aab5cc;font-size:13px}
+section[hidden]{display:none}
+.preview{background:#080d18;border:1px dashed #435578;border-radius:10px;padding:15px;min-height:140px;display:grid;place-items:center;overflow:hidden}
+.preview img,.preview video{max-width:100%;max-height:400px}
+.preview audio{width:100%}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.item{background:#0b1427;padding:12px;border-radius:8px;margin:8px 0;display:flex;justify-content:space-between;gap:10px;align-items:center}
+footer{text-align:center;color:#8795b0;padding:35px;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+ <div class="logo">WORLD <span>AI</span> STUDIO</div>
+ <p>YOUR CREATIVE WORLD · DIGITAL STUDIO</p>
+</header>
+
+<main>
+<div class="hero">
+ <h1>CREATE WITHOUT <span>LIMITS.</span></h1>
+ <p class="muted">Il tuo spazio creativo per immagini, video, musica e progetti digitali.</p>
+</div>
+
+<nav>
+<button class="active" data-tab="home">Home</button>
+<button data-tab="projects">Progetti</button>
+<button data-tab="prompts">AI Prompt Lab</button>
+<button data-tab="images">Image Studio</button>
+<button data-tab="media">Audio & Video</button>
+</nav>
+
+<section id="home">
+<div class="grid">
+ <div class="card">
+  <h2>Creative Workspace</h2>
+  <p class="muted">Organizza le tue idee e crea nuovi progetti.</p>
+  <button class="primary" onclick="openTab('projects')">Nuovo progetto</button>
+ </div>
+ <div class="card">
+  <h2>AI Prompt Lab</h2>
+  <p class="muted">Prepara prompt dettagliati per i tuoi strumenti AI.</p>
+  <button onclick="openTab('prompts')">Apri Prompt Lab</button>
+ </div>
+ <div class="card">
+  <h2>Image Studio</h2>
+  <p class="muted">Modifica immagini direttamente nel browser.</p>
+  <button onclick="openTab('images')">Apri Image Studio</button>
+ </div>
+ <div class="card">
+  <h2>Audio & Video</h2>
+  <p class="muted">Carica e visualizza i tuoi file multimediali.</p>
+  <button onclick="openTab('media')">Apri strumenti</button>
+ </div>
+</div>
+</section>
+
+<section id="projects" hidden>
+<div class="grid">
+ <div class="card">
+  <h2>Crea progetto</h2>
+  <label>Nome progetto</label>
+  <input id="projectName" placeholder="Nome del progetto">
+  <label>Categoria</label>
+  <select id="projectType">
+   <option>Video</option><option>Immagine</option><option>Musica</option><option>Altro</option>
+  </select>
+  <button class="primary" onclick="addProject()">Crea progetto</button>
+ </div>
+ <div class="card">
+  <h2>I miei progetti</h2>
+  <div id="projectList"></div>
+ </div>
+</div>
+</section>
+
+<section id="prompts" hidden>
+<div class="card">
+ <h2>AI Prompt Lab</h2>
+ <label>Soggetto</label>
+ <input id="subject" placeholder="Descrivi cosa vuoi creare">
+ <label>Stile</label>
+ <select id="style">
+  <option>Fotorealistico cinematografico</option>
+  <option>3D realistico</option>
+  <option>Futuristico</option>
+  <option>Fantasy</option>
+  <option>Illustrazione digitale</option>
+ </select>
+ <label>Formato</label>
+ <select id="format">
+  <option>Verticale 9:16</option>
+  <option>Quadrato 1:1</option>
+  <option>Orizzontale 16:9</option>
+ </select>
+ <label>Dettagli aggiuntivi</label>
+ <textarea id="details" placeholder="Luci, colori, ambientazione..."></textarea>
+ <div class="actions">
+  <button class="primary" onclick="makePrompt()">Crea prompt</button>
+  <button onclick="copyPrompt()">Copia</button>
+  <button onclick="savePrompt()">Salva</button>
+ </div>
+ <label>Risultato</label>
+ <textarea id="output"></textarea>
+ <div id="promptStatus" class="muted"></div>
+</div>
+</section>
+
+<section id="images" hidden>
+<div class="grid">
+ <div class="card">
+  <h2>Image Studio</h2>
+  <label>Carica immagine</label>
+  <input type="file" id="imageFile" accept="image/*">
+  <label>Luminosità</label>
+  <input type="range" id="brightness" min="40" max="180" value="100">
+  <label>Contrasto</label>
+  <input type="range" id="contrast" min="40" max="180" value="100">
+  <label>Saturazione</label>
+  <input type="range" id="saturation" min="0" max="200" value="100">
+  <div class="actions">
+   <button onclick="resetImage()">Ripristina</button>
+   <button class="primary" onclick="downloadImage()">Scarica PNG</button>
+  </div>
+ </div>
+ <div class="card">
+  <h2>Anteprima immagine</h2>
+  <div class="preview" id="imagePreview">Nessuna immagine caricata</div>
+ </div>
+</div>
+</section>
+
+<section id="media" hidden>
+<div class="grid">
+ <div class="card">
+  <h2>Audio Studio</h2>
+  <label>Seleziona file audio</label>
+  <input type="file" id="audioFile" accept="audio/*">
+  <div class="preview" id="audioPreview">Nessun audio selezionato</div>
+ </div>
+ <div class="card">
+  <h2>Video Studio</h2>
+  <label>Seleziona file video</label>
+  <input type="file" id="videoFile" accept="video/*">
+  <div class="preview" id="videoPreview">Nessun video selezionato</div>
+ </div>
+</div>
+</section>
+
+<footer>WORLD AI STUDIO · CREATIVE DIGITAL PLATFORM</footer>
+</main>
+
+<script>
+function openTab(id){
+ document.querySelectorAll('main section').forEach(s=>s.hidden=s.id!==id);
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));
+}
+document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>openTab(b.dataset.tab));
+
+let projects=JSON.parse(localStorage.getItem('worldProjects')||'[]');
+function renderProjects(){
+ const box=document.getElementById('projectList');
+ box.innerHTML='';
+ projects.forEach((p,i)=>{
+  const row=document.createElement('div');
+  row.className='item';
+  const name=document.createElement('span');
+  name.textContent=p.name+' · '+p.type;
+  const del=document.createElement('button');
+  del.textContent='Elimina';
+  del.onclick=()=>{projects.splice(i,1);saveProjects()};
+  row.append(name,del);box.append(row);
+ });
+ if(!projects.length)box.textContent='Nessun progetto ancora.';
+}
+function saveProjects(){
+ localStorage.setItem('worldProjects',JSON.stringify(projects));
+ renderProjects();
+}
+function addProject(){
+ const name=document.getElementById('projectName').value.trim();
+ if(!name){alert('Inserisci un nome.');return}
+ projects.push({name,type:document.getElementById('projectType').value});
+ document.getElementById('projectName').value='';
+ saveProjects();
+}
+renderProjects();
+
+let prompts=JSON.parse(localStorage.getItem('worldPrompts')||'[]');
+function makePrompt(){
+ const subject=document.getElementById('subject').value.trim();
+ if(!subject){alert('Inserisci il soggetto.');return}
+ document.getElementById('output').value=
+ subject+'. Stile: '+document.getElementById('style').value+
+ '. Formato: '+document.getElementById('format').value+
+ '. '+document.getElementById('details').value+
+ '. Alta qualità, dettagli definiti, composizione professionale.';
+ document.getElementById('promptStatus').textContent='Prompt creato.';
+}
+async function copyPrompt(){
+ const text=document.getElementById('output').value;
+ if(!text){alert('Crea prima un prompt.');return}
+ try{await navigator.clipboard.writeText(text);document.getElementById('promptStatus').textContent='Copiato.'}
+ catch{document.getElementById('output').select();document.getElementById('promptStatus').textContent='Seleziona e copia il testo.'}
+}
+function savePrompt(){
+ const text=document.getElementById('output').value.trim();
+ if(!text){alert('Nessun prompt da salvare.');return}
+ prompts.unshift(text);
+ localStorage.setItem('worldPrompts',JSON.stringify(prompts));
+ document.getElementById('promptStatus').textContent='Prompt salvato.';
+}
+
+let image=null,canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+function renderImage(){
+ if(!image)return;
+ canvas.width=image.naturalWidth;canvas.height=image.naturalHeight;
+ ctx.filter=`brightness(${brightness.value}%) contrast(${contrast.value}%) saturate(${saturation.value}%)`;
+ ctx.drawImage(image,0,0);ctx.filter='none';
+ const preview=new Image();preview.src=canvas.toDataURL('image/png');
+ document.getElementById('imagePreview').replaceChildren(preview);
+}
+imageFile.onchange=e=>{
+ const file=e.target.files[0];if(!file)return;
+ image=new Image();image.onload=renderImage;image.src=URL.createObjectURL(file);
+};
+[brightness,contrast,saturation].forEach(el=>el.oninput=renderImage);
+function resetImage(){brightness.value=100;contrast.value=100;saturation.value=100;renderImage()}
+function downloadImage(){
+ if(!image){alert('Carica prima un’immagine.');return}
+ const a=document.createElement('a');a.download='world-ai-image.png';a.href=canvas.toDataURL('image/png');a.click();
+}
+function mediaPreview(inputId,previewId,type){
+ document.getElementById(inputId).onchange=e=>{
+  const file=e.target.files[0];if(!file)return;
+  const el=document.createElement(type);el.controls=true;el.src=URL.createObjectURL(file);
+  document.getElementById(previewId).replaceChildren(el);
+ };
+}
+mediaPreview('audioFile','audioPreview','audio');
+mediaPreview('videoFile','videoPreview','video');
+</script>
+</body>
+</html>
